@@ -221,46 +221,159 @@ class _MainPageState extends State<MainPage> {
   late Future < Position > _currentLocation;
   final currentUser = FirebaseAuth.instance.currentUser!.email;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   Set<Marker> _markers = {};
+  String _selectedGroup = ''; //Store the selected ID
+  List<String> _userGroups = []; // List to store user's groups
 
+  //Function to get different marker colors based on the uid 
+  Color getMarkerColor(String uid) {
+    List<Color> colors = [
+      Colors.red,
+      Colors.blue,
+      Colors.green,
+      Colors.yellow,
+      Colors.orange,
+      Colors.purple,
+    ];
 
+    //Get the color index based on the uid
+    int colorIndex = uid.hashCode % colors.length;
+      return colors[colorIndex];
+  }
 
-  Future<void> _getOtherUsersLocations() async {
+Future<void> _fetchUserGroups() async {
+  try {
+    QuerySnapshot<Map<String, dynamic>> userGroupsSnapshot = await _firestore
+        .collection('groups')
+        .where('members', arrayContains: currentUser)
+        .get();
 
-    return _firestore.collection('users').get().then((usersSnapshot) {
     setState(() {
-      _markers = usersSnapshot.docs
-          .map((DocumentSnapshot document) {
-        GeoPoint? userGeoPoint = document['location'];
-        double lat = userGeoPoint!.latitude;
-        double lng = userGeoPoint.longitude;
-
-        String userUsername = document['username'];
-        String userEmail = document['email'];
-
-        // Creating a Marker for each user
-        return Marker(
-          markerId: MarkerId(document.id),
-          position: LatLng(lat, lng),
-          infoWindow: InfoWindow(
-            title: userUsername, 
-            snippet: userEmail,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ChatPage()
-                ),
-              );
-            }
-          ),
-        );
-      }).toSet();
+      _userGroups = userGroupsSnapshot.docs.map((doc) => doc['groupName'] as String).toList();
+      if (_userGroups.isNotEmpty) {
+        _selectedGroup = _userGroups.first;
+        _getOtherUsersLocations();
+      }
     });
-  }).catchError((error) {
-    print('Error getting other users locations: $error');
-  });
+  } catch (error) {
+    print('Error fetching user groups: $error');
+  }
 }
+
+
+
+// Future<void> _getOtherUsersLocations(String groupId) async {
+//   try {
+//     // Fetch user emails from the selected group
+//     QuerySnapshot<Map<String, dynamic>> userQuerySnapshot =
+//         await _firestore.collection('groups').doc(groupId).collection('members').get();
+
+//     List<String> userEmails =
+//         userQuerySnapshot.docs.map((doc) => doc.id).toList();
+
+//     QuerySnapshot<Map<String, dynamic>> usersSnapshot =
+//         await _firestore.collection('users').where('email', whereIn: userEmails).get();
+
+//     Set<Marker> markers = {};
+
+//     for (var document in usersSnapshot.docs) {
+//       GeoPoint? userGeoPoint = document['location'];
+//       if (userGeoPoint != null) {
+//         double lat = userGeoPoint.latitude;
+//         double lng = userGeoPoint.longitude;
+
+//         String userUsername = document['username'];
+//         String userEmail = document['email'];
+
+//         Marker marker = Marker(
+//           markerId: MarkerId(document.id),
+//           position: LatLng(lat, lng),
+//           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+//           infoWindow: InfoWindow(
+//             title: userUsername,
+//             snippet: userEmail,
+//             onTap: () {
+//               Navigator.push(
+//                 context,
+//                 MaterialPageRoute(
+//                   builder: (context) => const ChatPage(),
+//                 ),
+//               );
+//             },
+//           ),
+//         );
+
+//         markers.add(marker);
+//       }
+//     }
+
+//     setState(() {
+//       _markers = markers; // Update the state with new markers
+//     });
+//   } catch (error) {
+//     print('Error fetching user locations: $error');
+//   }
+// }
+
+Future<void> _getOtherUsersLocations() async {
+  try {
+    QuerySnapshot<Map<String, dynamic>> usersSnapshot =
+        await _firestore.collection('users').get();
+
+    Set<Marker> markers = {};
+
+    setState(() {
+      _markers.clear(); // Clear existing markers
+
+      for (var document in usersSnapshot.docs) {
+        GeoPoint? userGeoPoint = document['location'];
+        if (userGeoPoint != null) {
+          double lat = userGeoPoint.latitude;
+          double lng = userGeoPoint.longitude;
+
+          String userUsername = document['username'];
+          String userEmail = document['email'];
+
+          Marker marker = Marker(
+            markerId: MarkerId(document.id),
+            position: LatLng(lat, lng),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+            infoWindow: InfoWindow(
+              title: userUsername,
+              snippet: userEmail,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ChatPage(),
+                  ),
+                );
+              },
+            ),
+          );
+
+          markers.add(marker);
+        }
+      }
+
+      _markers.addAll(markers); // Add all markers to the _markers set
+    });
+  } catch (error) {
+    print('Error fetching users\' locations: $error');
+  }
+}
+
+
+
+
+
+// Function to handle changing groups
+  void _changeGroup(String newGroupId) {
+    setState(() {
+      _selectedGroup = newGroupId;
+    });
+    _getOtherUsersLocations();
+  }
   
   
   @override
@@ -268,7 +381,7 @@ class _MainPageState extends State<MainPage> {
     super.initState();
     _currentLocation = Geolocator
       .getCurrentPosition();
-    _getOtherUsersLocations();
+    _fetchUserGroups();
   }
   
   @override
@@ -280,6 +393,18 @@ class _MainPageState extends State<MainPage> {
         title: const Text('Home'),
         centerTitle: true,
         actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.group), // Icon for the dropdown
+            onSelected: _changeGroup,
+            itemBuilder: (BuildContext context) {
+              return _userGroups.map((String group) {
+                return PopupMenuItem<String>(
+                  value: group,
+                  child: Text(group), // Adjust text representation
+                );
+              }).toList();
+            },
+          ),
           IconButton(
             onPressed: () {
               Navigator.push(
@@ -308,7 +433,7 @@ class _MainPageState extends State<MainPage> {
                           target: userLocation,
                           zoom: 16,
                         ),
-                        markers: _markers,
+                        markers: Set<Marker>.from(_markers),
                         // {
                         //   Marker(
                         //     markerId: const MarkerId("User Location"),
@@ -341,11 +466,13 @@ class _MainPageState extends State<MainPage> {
                     ),
                   ),
               ),
-          ],  
-        ),
+        ],
+      ),
     );
   }
 }
+
+
 
 class AlertUsers extends StatelessWidget {
   const AlertUsers ({super.key});

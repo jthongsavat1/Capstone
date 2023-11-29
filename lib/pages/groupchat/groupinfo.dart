@@ -1,273 +1,233 @@
-import 'package:capstone/pages/groupchat/addmembers.dart';
-import 'package:capstone/pages/groupchat/groupspage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:capstone/pages/messagepage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class GroupInfo extends StatefulWidget {
-  final String groupId, groupName;
-  const GroupInfo({required this.groupId, required this.groupName, Key? key})
-      : super(key: key);
-
-  @override
-  State<GroupInfo> createState() => _GroupInfoState();
-}
-
-class _GroupInfoState extends State<GroupInfo> {
-  List membersList = [];
-  bool isLoading = true;
-
+class GroupMembersScreen extends StatelessWidget {
+  final String groupId;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+    final currentUser = FirebaseAuth.instance.currentUser!.email;
 
-  @override
-  void initState() {
-    super.initState();
 
-    getGroupDetails();
-  }
+  GroupMembersScreen({super.key, required this.groupId});
+  
 
-  Future getGroupDetails() async {
-    await _firestore
-        .collection('groups')
-        .doc(widget.groupId)
-        .get()
-        .then((chatMap) {
-      membersList = chatMap['members'];
-      print(membersList);
-      isLoading = false;
-      setState(() {});
-    });
-  }
+  Future<List<dynamic>> getGroupMembers() async {
+    try {
+      DocumentSnapshot<Map<String, dynamic>> groupSnapshot =
+          await _firestore.collection('groups').doc(groupId).get();
 
-  bool checkAdmin() {
-    bool isAdmin = false;
-
-    membersList.forEach((element) {
-      if (element['uid'] == _auth.currentUser!.uid) {
-        isAdmin = element['isAdmin'];
+      if (groupSnapshot.exists) {
+        List<dynamic> members = groupSnapshot.data()?['members'];
+        return members;
       }
-    });
-    return isAdmin;
-  }
-
-  Future removeMembers(int index) async {
-    String uid = membersList[index]['uid'];
-
-    setState(() {
-      isLoading = true;
-      membersList.removeAt(index);
-    });
-
-    await _firestore.collection('groups').doc(widget.groupId).update({
-      "members": membersList,
-    }).then((value) async {
-      await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('groups')
-          .doc(widget.groupId)
-          .delete();
-
-      setState(() {
-        isLoading = false;
-      });
-    });
-  }
-
-  void showDialogBox(int index) {
-    if (checkAdmin()) {
-      if (_auth.currentUser!.uid != membersList[index]['uid']) {
-        showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                content: ListTile(
-                  onTap: () => removeMembers(index),
-                  title: const Text("Remove This Member"),
-                ),
-              );
-            });
-      }
+      return [];
+    } catch (error) {
+      return [];
     }
   }
 
-  Future onLeaveGroup() async {
-    if (!checkAdmin()) {
-      setState(() {
-        isLoading = true;
+  Future<void> searchAndAddUserToGroup(BuildContext context) async {
+    String selectedUserId = ''; // Store the selected user's ID
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String searchQuery = ''; // Store the search query
+
+        return AlertDialog(
+          title: const Text('Search and Add User'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                onChanged: (value) {
+                  searchQuery = value;
+                },
+                decoration: const InputDecoration(
+                  labelText: 'Search User',
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              ElevatedButton(
+                onPressed: () async {
+                  // Implement the logic to search users in Firestore based on 'searchQuery'
+                  QuerySnapshot<Map<String, dynamic>> querySnapshot =
+                      await _firestore
+                          .collection('users')
+                          .where('email', isEqualTo: searchQuery)
+                          .get();
+
+                  if (querySnapshot.docs.isNotEmpty) {
+                    // Display the search results, allowing selection of a user
+                    // For demonstration, just selecting the first user in the query
+                    selectedUserId = querySnapshot.docs.first.id;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('User found!'),
+                      ),
+                    );
+                  } else {
+                    // No user found with the provided email
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('No user found with this email'),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Search'),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Add User'),
+              onPressed: () async {
+                if (selectedUserId.isNotEmpty) {
+                  // Add selectedUserId to the group
+                  try {
+                    await _firestore
+                        .collection('groups')
+                        .doc(groupId)
+                        .update({
+                      'members': FieldValue.arrayUnion([selectedUserId]),
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('User added to the group with ID: $selectedUserId'),
+                      ),
+                    );
+                    Navigator.of(context).pop(); // Close the dialog
+                  } catch (error) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error adding user to the group: $error'),
+                      ),
+                    );
+                  }
+                } else {
+                  // No user selected to add
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('No user selected'),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> leaveGroup(BuildContext context, String email) async {
+    try {
+      // Remove the user from the 'members' array of the group
+      await _firestore.collection('groups').doc(groupId).update({
+        'members': FieldValue.arrayRemove([email]),
       });
-
-      for (int i = 0; i < membersList.length; i++) {
-        if (membersList[i]['uid'] == _auth.currentUser!.uid) {
-          membersList.removeAt(i);
-        }
-      }
-
-      await _firestore.collection('groups').doc(widget.groupId).update({
-        "members": membersList,
-      });
-
-      await _firestore
-          .collection('users')
-          .doc(_auth.currentUser!.uid)
-          .collection('groups')
-          .doc(widget.groupId)
-          .delete();
-
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const GroupsPage()),
-        (route) => false,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You have left the group'),
+        ),
+      );
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error leaving the group: $error'),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final Size size = MediaQuery.of(context).size;
-
-    return SafeArea(
-      child: Scaffold(
-        body: isLoading
-            ? Container(
-                height: size.height,
-                width: size.width,
-                alignment: Alignment.center,
-                child: const CircularProgressIndicator(),
-              )
-            : SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: BackButton(),
-                    ),
-                    Container(
-                      height: size.height / 8,
-                      width: size.width / 1.1,
-                      child: Row(
-                        children: [
-                          Container(
-                            height: size.height / 11,
-                            width: size.height / 11,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.grey,
-                            ),
-                            child: Icon(
-                              Icons.group,
-                              color: Colors.white,
-                              size: size.width / 10,
-                            ),
-                          ),
-                          SizedBox(
-                            width: size.width / 20,
-                          ),
-                          Expanded(
-                            child: Text(
-                              widget.groupName,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: size.width / 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    //
-
-                    SizedBox(
-                      height: size.height / 20,
-                    ),
-
-                    SizedBox(
-                      width: size.width / 1.1,
-                      child: Text(
-                        "${membersList.length} Members",
-                        style: TextStyle(
-                          fontSize: size.width / 20,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(
-                      height: size.height / 20,
-                    ),
-
-                    // Members Name
-
-                    checkAdmin()
-                        ? ListTile(
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => AddMembersINGroup(
-                                  groupChatId: widget.groupId,
-                                  name: widget.groupName,
-                                  membersList: membersList,
-                                ),
-                              ),
-                            ),
-                            leading: const Icon(
-                              Icons.add,
-                            ),
-                            title: Text(
-                              "Add Members",
-                              style: TextStyle(
-                                fontSize: size.width / 22,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          )
-                        : const SizedBox(),
-
-                    Flexible(
-                      child: ListView.builder(
-                        itemCount: membersList.length,
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          return ListTile(
-                            onTap: () => showDialogBox(index),
-                            leading: Icon(Icons.account_circle),
-                            title: Text(
-                              membersList[index]['name'],
-                              style: TextStyle(
-                                fontSize: size.width / 22,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            subtitle: Text(membersList[index]['email']),
-                            trailing: Text(
-                                membersList[index]['isAdmin'] ? "Admin" : ""),
-                          );
-                        },
-                      ),
-                    ),
-
-                    ListTile(
-                      onTap: onLeaveGroup,
-                      leading: const Icon(
-                        Icons.logout,
-                        color: Colors.redAccent,
-                      ),
-                      title: Text(
-                        "Leave Group",
-                        style: TextStyle(
-                          fontSize: size.width / 22,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.redAccent,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Group Members'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add),
+            onPressed: () {
+              searchAndAddUserToGroup(context);
+            },
+          ),
+        ],
       ),
+      body: FutureBuilder<List<dynamic>>(
+        future: getGroupMembers(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else {
+            List<dynamic> members = snapshot.data ?? [];
+
+            if (members.isEmpty) {
+              return const Center(child: Text('No members in this group'));
+            }
+
+            return ListView.builder(
+              itemCount: members.length,
+              itemBuilder: (context, index) {
+                String memberId = members[index];
+                // var data = members[index]
+                //   as Map<String, dynamic>;
+
+                return ListTile(
+                  title: Text(memberId),
+                  leading: const Icon(Icons.account_box, color: Colors.black),
+                  // onTap: () {
+                  //   //pass the clicked users UID to the chat page
+                  //   Navigator.push(
+                  //     context,
+                  //     MaterialPageRoute(
+                  //       builder: (context) => MessagePage(
+                  //         receiverUserEmail: data['email'],
+                  //         receiverUserID: data['uid'],
+                  //       ),
+                  //     ),
+                  //   );
+                  // },
+                  // You can customize the ListTile based on the member data
+                );
+              },
+            );
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.exit_to_app),
+        onPressed: () async {
+
+        // Check if the current user is a member of the group
+        List<dynamic> members = await getGroupMembers();
+        if (members.contains(currentUser!)) {
+          // If the current user is a member, then leave the group
+          await leaveGroup(context, currentUser!);
+        } else {
+          // If the user is not a member, show a message (for illustration purposes)
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You are not a member of this group'),
+            ),
+          );
+        }
+      },
+    ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }
