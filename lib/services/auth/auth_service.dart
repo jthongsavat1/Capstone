@@ -10,9 +10,6 @@ class AuthService extends ChangeNotifier {
 
   //instance of firestore
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
-  //get the users current location
-  // final Geolocator _geolocator = Geolocator();
 
   //sign user in 
   Future<UserCredential> signInWithEmailandPassword(
@@ -26,12 +23,12 @@ class AuthService extends ChangeNotifier {
       );
 
       // Get user's current location
-          Position position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high,
-          );
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
 
-          // Create a GeoPoint object
-          GeoPoint userGeoPoint = GeoPoint(position.latitude, position.longitude);
+      // Create a GeoPoint object
+      GeoPoint userGeoPoint = GeoPoint(position.latitude, position.longitude);
 
       //add a new document for the user in users collection if it doesnt exist already
       _firestore.collection('users')
@@ -85,17 +82,56 @@ class AuthService extends ChangeNotifier {
       }
     }
 
-  Future<UserCredential> signInWithGoogle() async {
-    final GoogleSignInAccount? gUser = await GoogleSignIn().signIn();
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
-    final GoogleSignInAuthentication gAuth = await gUser!.authentication;
+      if (googleUser == null) {
+        throw FirebaseAuthException(
+          code: 'ERROR_ABORTED_BY_USER',
+          message: 'Sign in aborted by user',
+        );
+      }
 
-    final credential = GoogleAuthProvider.credential(
-      accessToken: gAuth.accessToken,
-      idToken: gAuth.idToken,
-    );
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
-    return await FirebaseAuth.instance.signInWithCredential(credential);
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential =
+          await _firebaseAuth.signInWithCredential(credential);
+
+      // After successful sign-in, retrieve user data and store it in Firestore
+      await _storeUserData(userCredential.user!);
+
+      return userCredential;
+    } catch (e) {
+      print('Error signing in with Google: $e');
+      return null;
+    }
+  }
+
+  Future<void> _storeUserData(User user) async {
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      GeoPoint userGeoPoint = GeoPoint(position.latitude, position.longitude);
+
+      await _firestore.collection('users').doc(user.uid).set({
+        'uid': user.uid,
+        'email': user.email,
+        'username': user.displayName ?? user.email!.split('@')[0],
+        'bio': 'Empty Bio...',
+        'location': userGeoPoint,
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print('Error storing user data: $e');
+    }
   }
 
   //sign user out

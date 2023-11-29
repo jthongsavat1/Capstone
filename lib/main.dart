@@ -265,28 +265,28 @@ Future<void> _fetchUserGroups() async {
 // Future<void> _getOtherUsersLocations(String groupId) async {
 //   try {
 //     // Fetch user emails from the selected group
-//     QuerySnapshot<Map<String, dynamic>> userQuerySnapshot =
-//         await _firestore.collection('groups').doc(groupId).collection('members').get();
+//     DocumentSnapshot<Map<String, dynamic>> groupDoc =
+//         await _firestore.collection('groups').doc(groupId).get();
 
-//     List<String> userEmails =
-//         userQuerySnapshot.docs.map((doc) => doc.id).toList();
-
-//     QuerySnapshot<Map<String, dynamic>> usersSnapshot =
-//         await _firestore.collection('users').where('email', whereIn: userEmails).get();
+//     List<dynamic> members = groupDoc.data()?['members'] ?? [];
 
 //     Set<Marker> markers = {};
 
-//     for (var document in usersSnapshot.docs) {
-//       GeoPoint? userGeoPoint = document['location'];
+//     for (var i = 0; i < members.length; i++) {
+//       String userId = members[i];
+//       DocumentSnapshot<Map<String, dynamic>> userSnapshot =
+//           await _firestore.collection('users').doc(userId).get();
+
+//       GeoPoint? userGeoPoint = userSnapshot.data()?['location'];
 //       if (userGeoPoint != null) {
 //         double lat = userGeoPoint.latitude;
 //         double lng = userGeoPoint.longitude;
 
-//         String userUsername = document['username'];
-//         String userEmail = document['email'];
+//         String userUsername = userSnapshot.data()?['username'];
+//         String userEmail = userSnapshot.data()?['email'];
 
 //         Marker marker = Marker(
-//           markerId: MarkerId(document.id),
+//           markerId: MarkerId(userId),
 //           position: LatLng(lat, lng),
 //           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
 //           infoWindow: InfoWindow(
@@ -314,6 +314,8 @@ Future<void> _fetchUserGroups() async {
 //     print('Error fetching user locations: $error');
 //   }
 // }
+
+
 
 Future<void> _getOtherUsersLocations() async {
   try {
@@ -362,8 +364,6 @@ Future<void> _getOtherUsersLocations() async {
     print('Error fetching users\' locations: $error');
   }
 }
-
-
 
 
 
