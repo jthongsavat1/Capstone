@@ -252,7 +252,9 @@ Future<void> _fetchUserGroups() async {
       _userGroups = userGroupsSnapshot.docs.map((doc) => doc['groupName'] as String).toList();
       if (_userGroups.isNotEmpty) {
         _selectedGroup = _userGroups.first;
-        _getOtherUsersLocations();
+        _getOtherUsersLocations(
+          // _selectedGroup
+        );
       }
     });
   } catch (error) {
@@ -274,36 +276,42 @@ Future<void> _fetchUserGroups() async {
 
 //     for (var i = 0; i < members.length; i++) {
 //       String userId = members[i];
-//       DocumentSnapshot<Map<String, dynamic>> userSnapshot =
-//           await _firestore.collection('users').doc(userId).get();
 
-//       GeoPoint? userGeoPoint = userSnapshot.data()?['location'];
-//       if (userGeoPoint != null) {
-//         double lat = userGeoPoint.latitude;
-//         double lng = userGeoPoint.longitude;
+//       // Query the 'users' collection for user with the specified userId
+//       QuerySnapshot<Map<String, dynamic>> userQuerySnapshot =
+//           await _firestore.collection('users').where('userId', isEqualTo: userId).get();
 
-//         String userUsername = userSnapshot.data()?['username'];
-//         String userEmail = userSnapshot.data()?['email'];
+//       if (userQuerySnapshot.docs.isNotEmpty) {
+//         DocumentSnapshot<Map<String, dynamic>> userSnapshot = userQuerySnapshot.docs.first;
+//         GeoPoint? userGeoPoint = userSnapshot.data()?['location'];
 
-//         Marker marker = Marker(
-//           markerId: MarkerId(userId),
-//           position: LatLng(lat, lng),
-//           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-//           infoWindow: InfoWindow(
-//             title: userUsername,
-//             snippet: userEmail,
-//             onTap: () {
-//               Navigator.push(
-//                 context,
-//                 MaterialPageRoute(
-//                   builder: (context) => const ChatPage(),
-//                 ),
-//               );
-//             },
-//           ),
-//         );
+//         if (userGeoPoint != null) {
+//           double lat = userGeoPoint.latitude;
+//           double lng = userGeoPoint.longitude;
 
-//         markers.add(marker);
+//           String userUsername = userSnapshot.data()?['username'];
+//           String userEmail = userSnapshot.data()?['email'];
+
+//           Marker marker = Marker(
+//             markerId: MarkerId(userId),
+//             position: LatLng(lat, lng),
+//             icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+//             infoWindow: InfoWindow(
+//               title: userUsername,
+//               snippet: userEmail,
+//               onTap: () {
+//                 Navigator.push(
+//                   context,
+//                   MaterialPageRoute(
+//                     builder: (context) => const ChatPage(),
+//                   ),
+//                 );
+//               },
+//             ),
+//           );
+
+//           markers.add(marker);
+//         }
 //       }
 //     }
 
@@ -314,6 +322,7 @@ Future<void> _fetchUserGroups() async {
 //     print('Error fetching user locations: $error');
 //   }
 // }
+
 
 
 
@@ -372,7 +381,9 @@ Future<void> _getOtherUsersLocations() async {
     setState(() {
       _selectedGroup = newGroupId;
     });
-    _getOtherUsersLocations();
+    _getOtherUsersLocations(
+      // newGroupId
+    );
   }
   
   

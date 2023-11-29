@@ -1,3 +1,4 @@
+import 'package:capstone/pages/groupchat/groupchatroom.dart';
 import 'package:capstone/pages/messagepage.dart';
 import 'package:capstone/services/chat/searchscreenchat.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,8 +20,6 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Scaffold is a layout for
-    // the major Material Components.
     return Scaffold(
       appBar: AppBar(
         title: const Text('Chat'),
@@ -37,9 +36,41 @@ class _ChatPageState extends State<ChatPage> {
             ),
         ],
       ),
-      body: _buildUserList(),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text(
+              'Individual Chats',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            child: _buildUserList(),
+          ),
+          const Divider(), // Add a divider between individual chats and group chats
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text(
+              'Group Chats',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            child: _buildGroupChats(),
+          ),
+        ],
+      ),
     );
   }
+
 
   //build a list of users expect for the current user
   Widget _buildUserList() {
@@ -92,4 +123,66 @@ class _ChatPageState extends State<ChatPage> {
       return Container();
     }
   }
+
+
+  // Build the list of group chats
+  Widget _buildGroupChats() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('groups')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Text('Error');
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Text('Loading...');
+        }
+
+        final groups = snapshot.data!.docs;
+
+        if (groups.isEmpty) {
+          return const Center(
+            child: Text('No Groups Available'),
+          );
+        }
+
+        final userGroups = groups.where((group) => (group['members'] as List).contains(_auth.currentUser!.email));
+
+        if (userGroups.isEmpty) {
+          return const Center(
+            child: Text('You are not part of any groups'),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: userGroups.length,
+          itemBuilder: (context, index) {
+            final group = userGroups.elementAt(index);
+            final groupId = group.id;
+            final groupName = group['groupName']; // Replace with your group name field
+
+            return ListTile(
+              title: Text(groupName),
+              leading: const Icon(Icons.group, color: Colors.black),
+              trailing: const Icon(Icons.message,color: Colors.black),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GroupChatRoom(
+                      receiverGroupId: groupId, 
+                      receiverGroupName: groupName,
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+
 }

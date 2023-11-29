@@ -122,7 +122,7 @@ class AuthService extends ChangeNotifier {
 
       GeoPoint userGeoPoint = GeoPoint(position.latitude, position.longitude);
 
-      await _firestore.collection('users').doc(user.uid).set({
+      await _firestore.collection('users').doc(user.email).set({
         'uid': user.uid,
         'email': user.email,
         'username': user.displayName ?? user.email!.split('@')[0],

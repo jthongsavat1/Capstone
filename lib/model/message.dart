@@ -26,3 +26,30 @@ class Message {
     };
   }
 }
+
+class GroupMessage {
+  final String senderId;
+  final String senderEmail;
+  final String groupId; // Group ID for identifying the chat group
+  final String message;
+  final Timestamp timestamp;
+
+  GroupMessage({
+    required this.senderId,
+    required this.senderEmail,
+    required this.groupId,
+    required this.message,
+    required this.timestamp,
+  });
+
+  // Convert to a map
+  Map<String, dynamic> toMap() {
+    return {
+      'senderId': senderId,
+      'senderEmail': senderEmail,
+      'groupId': groupId,
+      'message': message,
+      'timestamp': timestamp,
+    };
+  }
+}

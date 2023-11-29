@@ -1,204 +1,167 @@
-// import 'package:capstone/pages/groupchat/groupinfo.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
-// import 'package:flutter/material.dart';
+import 'package:capstone/components/chat_bubble.dart';
+import 'package:capstone/components/my_text_field.dart';
+import 'package:capstone/services/chat/chat_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
-// class GroupChatRoom extends StatelessWidget {
-//   final String groupChatId, groupName;
+class GroupChatRoom extends StatefulWidget {
+  final String receiverGroupId; // Changed to group ID
+  final String receiverGroupName; // Optional: name of the group
 
-//   GroupChatRoom({required this.groupName, required this.groupChatId, Key? key})
-//       : super(key: key);
+  const GroupChatRoom({
+    Key? key,
+    required this.receiverGroupId,
+    required this.receiverGroupName,
+  }) : super(key: key);
 
-//   final TextEditingController _message = TextEditingController();
-//   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-//   final FirebaseAuth _auth = FirebaseAuth.instance;
+  @override
+  State<GroupChatRoom> createState() => _GroupChatRoomState();
+}
 
-//   void onSendMessage() async {
-//     if (_message.text.isNotEmpty) {
-//       Map<String, dynamic> chatData = {
-//         "sendBy": _auth.currentUser!.displayName,
-//         "message": _message.text,
-//         "type": "text",
-//         "time": FieldValue.serverTimestamp(),
-//       };
+class _GroupChatRoomState extends State<GroupChatRoom> {
+  final TextEditingController _messageController = TextEditingController();
+  final ChatService _chatService = ChatService();
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-//       _message.clear();
+  void sendMessageToGroup() async {
+    // Only send messages if there is something to send
+    if (_messageController.text.isNotEmpty) {
+      await _chatService.sendMessageToGroup(
+        widget.receiverGroupId, // Use the group ID
+        _firebaseAuth.currentUser!.uid, // Sender's ID
+        _messageController.text,
+      );
+      // Clear the text controller after sending message
+      _messageController.clear();
+    }
+  }
 
-//       await _firestore
-//           .collection('groups')
-//           .doc(groupChatId)
-//           .collection('chats')
-//           .add(chatData);
-//     }
-//   }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.receiverGroupName), // Display group name in the app bar
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          // Messages
+          Expanded(
+            child: _buildMessageList(),
+          ),
 
-//   @override
-//   Widget build(BuildContext context) {
-//     final Size size = MediaQuery.of(context).size;
+          // User input
+          _buildMessageInput(),
 
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text(groupName),
-//         actions: [
-//           IconButton(
-//               onPressed: () => Navigator.of(context).push(
-//                     MaterialPageRoute(
-//                       builder: (_) => GroupInfo(
-//                         groupName: groupName,
-//                         groupId: groupChatId,
-//                       ),
-//                     ),
-//                   ),
-//               icon: const Icon(Icons.more_vert)),
-//         ],
-//       ),
-//       body: SingleChildScrollView(
-//         child: Column(
-//           children: [
-//             SizedBox(
-//               height: size.height / 1.27,
-//               width: size.width,
-//               child: StreamBuilder<QuerySnapshot>(
-//                 stream: _firestore
-//                     .collection('groups')
-//                     .doc(groupChatId)
-//                     .collection('chats')
-//                     .orderBy('time')
-//                     .snapshots(),
-//                 builder: (context, snapshot) {
-//                   if (snapshot.hasData) {
-//                     return ListView.builder(
-//                       itemCount: snapshot.data!.docs.length,
-//                       itemBuilder: (context, index) {
-//                         Map<String, dynamic> chatMap =
-//                             snapshot.data!.docs[index].data()
-//                                 as Map<String, dynamic>;
+          const SizedBox(height: 25),
+        ],
+      ),
+    );
+  }
 
-//                         return messageTile(size, chatMap);
-//                       },
-//                     );
-//                   } else {
-//                     return Container();
-//                   }
-//                 },
-//               ),
-//             ),
-//             Container(
-//               height: size.height / 10,
-//               width: size.width,
-//               alignment: Alignment.center,
-//               child: SizedBox(
-//                 height: size.height / 12,
-//                 width: size.width / 1.1,
-//                 child: Row(
-//                   mainAxisAlignment: MainAxisAlignment.center,
-//                   children: [
-//                     SizedBox(
-//                       height: size.height / 17,
-//                       width: size.width / 1.3,
-//                       child: TextField(
-//                         controller: _message,
-//                         decoration: InputDecoration(
-//                             suffixIcon: IconButton(
-//                               onPressed: () {},
-//                               icon: const Icon(Icons.photo),
-//                             ),
-//                             hintText: "Send Message",
-//                             border: OutlineInputBorder(
-//                               borderRadius: BorderRadius.circular(8),
-//                             )),
-//                       ),
-//                     ),
-//                     IconButton(
-//                         icon: const Icon(Icons.send), onPressed: onSendMessage),
-//                   ],
-//                 ),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
+  // Build message list for the group
+  Widget _buildMessageList() {
+    return StreamBuilder(
+      stream: _chatService.getGroupMessages(widget.receiverGroupId),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        }
 
-//   Widget messageTile(Size size, Map<String, dynamic> chatMap) {
-//     return Builder(builder: (_) {
-//       if (chatMap['type'] == "text") {
-//         return Container(
-//           width: size.width,
-//           alignment: chatMap['sendBy'] == _auth.currentUser!.displayName
-//               ? Alignment.centerRight
-//               : Alignment.centerLeft,
-//           child: Container(
-//               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-//               margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-//               decoration: BoxDecoration(
-//                 borderRadius: BorderRadius.circular(15),
-//                 color: Colors.blue,
-//               ),
-//               child: Column(
-//                 children: [
-//                   Text(
-//                     chatMap['sendBy'],
-//                     style: const TextStyle(
-//                       fontSize: 12,
-//                       fontWeight: FontWeight.w500,
-//                       color: Colors.white,
-//                     ),
-//                   ),
-//                   SizedBox(
-//                     height: size.height / 200,
-//                   ),
-//                   Text(
-//                     chatMap['message'],
-//                     style: const TextStyle(
-//                       fontSize: 16,
-//                       fontWeight: FontWeight.w500,
-//                       color: Colors.white,
-//                     ),
-//                   ),
-//                 ],
-//               )),
-//         );
-//       } else if (chatMap['type'] == "img") {
-//         return Container(
-//           width: size.width,
-//           alignment: chatMap['sendBy'] == _auth.currentUser!.displayName
-//               ? Alignment.centerRight
-//               : Alignment.centerLeft,
-//           child: Container(
-//             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-//             margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-//             height: size.height / 2,
-//             child: Image.network(
-//               chatMap['message'],
-//             ),
-//           ),
-//         );
-//       } else if (chatMap['type'] == "notify") {
-//         return Container(
-//           width: size.width,
-//           alignment: Alignment.center,
-//           child: Container(
-//             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-//             margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-//             decoration: BoxDecoration(
-//               borderRadius: BorderRadius.circular(5),
-//               color: Colors.black38,
-//             ),
-//             child: Text(
-//               chatMap['message'],
-//               style: const TextStyle(
-//                 fontSize: 14,
-//                 fontWeight: FontWeight.bold,
-//                 color: Colors.white,
-//               ),
-//             ),
-//           ),
-//         );
-//       } else {
-//         return const SizedBox();
-//       }
-//     });
-//   }
-// }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Text('Loading...');
+        }
+
+        return ListView.builder(
+          itemCount: snapshot.data!.docs.length,
+          itemBuilder: (context, index) {
+            final document = snapshot.data!.docs[index];
+            return _buildMessageItem(document);
+          },
+        );
+      },
+    );
+  }
+
+  //build message item
+  Widget _buildMessageItem(DocumentSnapshot document) {
+    Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+
+    //align the messages accordingly
+    var alignment = (data['senderId'] ==  _firebaseAuth.currentUser!.uid)
+      ? Alignment.centerRight
+      : Alignment.centerLeft;
+
+      return Container(
+        alignment: alignment,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: 
+            (data['senderId'] ==  _firebaseAuth.currentUser!.uid)
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+            mainAxisAlignment: (data['senderId'] ==  _firebaseAuth.currentUser!.uid)
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
+
+            children: [
+              Text(data['senderEmail']),
+              const SizedBox(height: 5),
+              ChatBubble(message: data['message']),
+            ],
+              ),
+        )
+    );
+  }
+
+  //build message input
+  Widget _buildMessageInput() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 25.0),
+      child: Row(
+        children: [
+          //send Image button
+          IconButton(
+            color: Colors.black,
+            onPressed: () {},
+            icon: const Icon(
+              Icons.image,
+              size: 20,
+            )
+          ),
+
+          //textfield
+          Expanded(
+            child: MyTextField(
+              controller: _messageController,
+              hintText: 'Enter Message',
+              obscureText: false,
+            ),
+          ),
+    
+          //send button
+          IconButton(
+            color: Colors.black,
+            onPressed: sendMessageToGroup,
+            icon: const Icon(
+              Icons.arrow_upward,
+              size: 40,
+            )
+          ),
+
+          //send location button
+          IconButton(
+            color: Colors.black,
+            onPressed: () {},
+            icon: const Icon(
+              Icons.map_rounded,
+              size: 40,
+            )
+          ),
+        ],
+      ),
+    );
+  }
+}

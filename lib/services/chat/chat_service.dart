@@ -53,4 +53,40 @@ class ChatService extends ChangeNotifier {
       .orderBy('timestamp', descending: false)
       .snapshots();
    }
+
+
+  Future<void> sendMessageToGroup(String groupId, String senderId, String message) async {
+    try {
+      final String currentUserEmail = _firebaseAuth.currentUser!.email.toString();
+      final Timestamp timestamp = Timestamp.now();
+
+      GroupMessage newMessage = GroupMessage(
+        senderId: senderId, // Use the provided senderId
+        senderEmail: currentUserEmail, // Use the current user's email
+        groupId: groupId,
+        message: message,
+        timestamp: timestamp,
+      );
+
+      await _firestore
+          .collection('group_chat_rooms')
+          .doc(groupId)
+          .collection('messages')
+          .add(newMessage.toMap());
+    } catch (error) {
+      print('Error sending group message: $error');
+      // Handle the error as needed
+    }
+  }
+
+
+  // Adjusted method for getting messages for a specific group
+  Stream<QuerySnapshot> getGroupMessages(String groupId) {
+    return _firestore
+        .collection('group_chat_rooms')
+        .doc(groupId)
+        .collection('messages')
+        .orderBy('timestamp', descending: false)
+        .snapshots();
+  }
 }
