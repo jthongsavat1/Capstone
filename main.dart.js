@@ -49723,17 +49723,16 @@ case 6:n=c
 m=new A.kP(n.a,n.b)
 k=o.b
 j=a.a.c.a
-i=j.a
+i=j.b
 k=A.fh(k,k.gcV().en("users")).fo(0,i)
-h=j.b
-j=j.c
-if(j==null)j=h.split("@")[0]
-j=A.O(["uid",i,"email",h,"username",j,"bio","Empty Bio...","location",m],t.N,t.z)
-h=A.aOV(!0)
-j=A.GP(j)
-j.toString
+h=j.c
+if(h==null)h=i.split("@")[0]
+h=A.O(["uid",j.a,"email",i,"username",h,"bio","Empty Bio...","location",m],t.N,t.z)
+i=A.aOV(!0)
+h=A.GP(h)
+h.toString
 s=7
-return A.I(k.a.hm(0,j,h),$async$v1)
+return A.I(k.a.hm(0,h,i),$async$v1)
 case 7:q=1
 s=5
 break
