@@ -30,13 +30,25 @@ class _CreateGroupsPageState extends State<CreateGroupsPage> {
       };
 
       // Set the data for the group document
-      await groupDocRef.set(groupData);
+    await groupDocRef.set(groupData);
+
+    // Notify the user that the group was created
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Group created successfully!'),
+      ),
+    );
 
     Navigator.of(context).pop();
-    } catch (error) {
-      print('Error creating group: $error');
-    }
+  } catch (error) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error creating group: $error'),
+      ),
+    );
+    print('Error creating group: $error');
   }
+}
 
   @override
   Widget build(BuildContext context) {

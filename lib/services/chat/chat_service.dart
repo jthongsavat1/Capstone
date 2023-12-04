@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:capstone/model/message.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+
 
 class ChatService extends ChangeNotifier {
   //get instance of auth and firestore
@@ -9,7 +13,7 @@ class ChatService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   //Send Message
-  Future<void> sendMessage(String receiverId, String message) async {
+  Future<void> sendMessage(String receiverId, String message, [String? imageUrl]) async {
     //get current user data
     final String currentUserId = _firebaseAuth.currentUser!.uid;
     final String currentUserEmail = _firebaseAuth.currentUser!.email.toString();
@@ -21,6 +25,7 @@ class ChatService extends ChangeNotifier {
       senderEmail: currentUserEmail,
       receiverId: receiverId,
       message: message,
+      imageUrl: imageUrl,
       timestamp: timestamp,
     );
 
@@ -55,7 +60,7 @@ class ChatService extends ChangeNotifier {
    }
 
 
-  Future<void> sendMessageToGroup(String groupId, String senderId, String message) async {
+  Future<void> sendMessageToGroup(String groupId, String senderId, String message, [String? imageUrl]) async {
     try {
       final String currentUserEmail = _firebaseAuth.currentUser!.email.toString();
       final Timestamp timestamp = Timestamp.now();
@@ -65,6 +70,7 @@ class ChatService extends ChangeNotifier {
         senderEmail: currentUserEmail, // Use the current user's email
         groupId: groupId,
         message: message,
+        imageUrl: imageUrl,
         timestamp: timestamp,
       );
 
@@ -89,4 +95,5 @@ class ChatService extends ChangeNotifier {
         .orderBy('timestamp', descending: false)
         .snapshots();
   }
+
 }

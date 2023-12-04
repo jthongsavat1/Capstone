@@ -7,9 +7,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
-import 'pages/accountpage.dart';
+import 'pages/accounts/accountpage.dart';
 import 'pages/chatpage.dart';
-import 'pages/groupchat/groupspage.dart';
+import 'services/chat/groupchat/groupspage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'api/firebase_options.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -142,7 +142,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     leading: 
                     SquareTile(
                       onTap: () {}, 
-                      imagePath: 'assets/images/logo.jpg',
+                      imagePath: 'assets/images/logoidea.png',
                     ),
                     trailing: Expanded(
                       child: Align(

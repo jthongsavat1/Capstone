@@ -1,21 +1,27 @@
 // import 'package:capstone/pages/messagepage.dart';
+import 'package:capstone/pages/accounts/viewaccountpage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class GroupMembersScreen extends StatelessWidget {
+class GroupMembersScreen extends StatefulWidget {
   final String groupId;
+
+  const GroupMembersScreen({super.key, required this.groupId});
+
+  @override
+  State<GroupMembersScreen> createState() => _GroupMembersScreenState();
+}
+
+class _GroupMembersScreenState extends State<GroupMembersScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
     final currentUser = FirebaseAuth.instance.currentUser!.email;
-
-
-  GroupMembersScreen({super.key, required this.groupId});
-  
 
   Future<List<dynamic>> getGroupMembers() async {
     try {
       DocumentSnapshot<Map<String, dynamic>> groupSnapshot =
-          await _firestore.collection('groups').doc(groupId).get();
+          await _firestore.collection('groups').doc(widget.groupId).get();
 
       if (groupSnapshot.exists) {
         List<dynamic> members = groupSnapshot.data()?['members'];
@@ -97,10 +103,11 @@ class GroupMembersScreen extends StatelessWidget {
                   try {
                     await _firestore
                         .collection('groups')
-                        .doc(groupId)
+                        .doc(widget.groupId)
                         .update({
                       'members': FieldValue.arrayUnion([selectedUserId]),
                     });
+                    setState(() {});
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('User added to the group with ID: $selectedUserId'),
@@ -133,9 +140,10 @@ class GroupMembersScreen extends StatelessWidget {
   Future<void> leaveGroup(BuildContext context, String email) async {
     try {
       // Remove the user from the 'members' array of the group
-      await _firestore.collection('groups').doc(groupId).update({
+      await _firestore.collection('groups').doc(widget.groupId).update({
         'members': FieldValue.arrayRemove([email]),
       });
+      setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('You have left the group'),
@@ -189,18 +197,10 @@ class GroupMembersScreen extends StatelessWidget {
                 return ListTile(
                   title: Text(memberId),
                   leading: const Icon(Icons.account_box, color: Colors.black),
-                  // onTap: () {
-                  //   //pass the clicked users UID to the chat page
-                  //   Navigator.push(
-                  //     context,
-                  //     MaterialPageRoute(
-                  //       builder: (context) => MessagePage(
-                  //         receiverUserEmail: data['email'],
-                  //         receiverUserID: data['uid'],
-                  //       ),
-                  //     ),
-                  //   );
-                  // },
+                  onTap: () {
+                  // Navigate to the user's account page
+                  navigateToAccountPage(context, memberId);
+                },
                   // You can customize the ListTile based on the member data
                 );
               },
@@ -228,6 +228,14 @@ class GroupMembersScreen extends StatelessWidget {
       },
     ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+    void navigateToAccountPage(BuildContext context, String userId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserAccountPage(userId: userId),
+      ),
     );
   }
 }

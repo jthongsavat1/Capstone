@@ -44,74 +44,68 @@ class _LogInPageState extends State<LogInPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[300],
-      body: 
-      DecoratedBox(
+      body: DecoratedBox(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/images/background.jpg'), fit: BoxFit.cover
-          )
+            image: AssetImage('assets/images/background.jpg'),
+            fit: BoxFit.cover,
+          ),
         ),
         child: Row(
           children: [
-            const Expanded(
-                child: 
-                  SizedBox(height: 50)
-              ),
             Expanded(
-                child: Container(
-                    color:const Color.fromARGB(255, 155, 46, 19),
-                    padding: const EdgeInsets.symmetric(horizontal: 25.0),
+            child: Center(
+              child: Image.asset(
+                'assets/images/logoidea.png', // Replace with your image path
+                height: 200,
+                width: 700,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 50),
-                        
-                        //logo
-                        Expanded(
-                          child: Image.asset(
-                            'assets/images/logo.jpg',
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-            
-                        const SizedBox(height: 50),
-                        
-                        //Welcome Back
+                        // Welcome Back
                         const Center(
                           child: Text(
                             "Welcome Back Buddy!",
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 28,
                             ),
                           ),
                         ),
-            
-                        const SizedBox(height: 25),
-                        
-                        //email field
+                        const SizedBox(height: 30),
+                        // Email field
                         MyTextField(
-                          controller: emailController, 
-                          hintText: 'Email', 
+                          controller: emailController,
+                          hintText: 'Email',
                           obscureText: false,
                         ),
-            
-                        const SizedBox(height: 10),
-                        
-                        //password
+                        const SizedBox(height: 5),
+                        // Password field
                         MyTextField(
-                          controller: passwordController, 
-                          hintText: 'Password', 
+                          controller: passwordController,
+                          hintText: 'Password',
                           obscureText: true,
                         ),
-            
-                        const SizedBox(height: 25),
-                        
-                        //sign in button
-                        MyButton(onTap: signIn, text: "Sign In"),
-            
                         const SizedBox(height: 50),
-            
+                        // Sign in button
+                        MyButton(onTap: signIn, text: "Sign In"),
+                        const SizedBox(height: 20),
                         const Center(
                           child: Text(
                             "Or sign in with",
@@ -120,34 +114,27 @@ class _LogInPageState extends State<LogInPage> {
                             ),
                           ),
                         ),
-            
                         const SizedBox(height: 5),
-            
-            
-                        Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SquareTile(
-                                onTap: () => AuthService().signInWithGoogle(), 
-                                imagePath: 'assets/images/google.png',
-                              ),
-                                  
-                              const SizedBox(width: 25),
-                                  
-                              SquareTile(
-                                onTap: () {}, 
-                                imagePath: 'assets/images/apple.png',
-                              ),
-                            ],
-                          ),
-                        ),
-            
-                        const SizedBox(height: 50),
-                        
-                        //register
+                        // Social Media Login Tiles
                         Row(
-                          mainAxisAlignment:  MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SquareTile(
+                              onTap: () =>
+                                  AuthService().signInWithGoogle(),
+                              imagePath: 'assets/images/google.png',
+                            ),
+                            const SizedBox(width: 15),
+                            SquareTile(
+                              onTap: () {},
+                              imagePath: 'assets/images/apple.png',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        // Register
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Text('Not a Member?'),
                             const SizedBox(width: 4),
@@ -157,7 +144,7 @@ class _LogInPageState extends State<LogInPage> {
                                 'Register now',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.lightBlueAccent
+                                  color: Colors.lightBlueAccent,
                                 ),
                               ),
                             )
@@ -166,10 +153,13 @@ class _LogInPageState extends State<LogInPage> {
                       ],
                     ),
                   ),
+                ),
+              ),
             ),
           ],
         ),
-      )
+      ),
     );
   }
+
 }

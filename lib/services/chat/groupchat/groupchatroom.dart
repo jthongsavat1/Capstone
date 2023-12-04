@@ -1,9 +1,15 @@
+import 'dart:io';
+
 import 'package:capstone/components/chat_bubble.dart';
 import 'package:capstone/components/my_text_field.dart';
 import 'package:capstone/services/chat/chat_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class GroupChatRoom extends StatefulWidget {
   final String receiverGroupId; // Changed to group ID
@@ -23,6 +29,42 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
   final TextEditingController _messageController = TextEditingController();
   final ChatService _chatService = ChatService();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+
+  void sendUserLocationGroup() async {
+  LocationPermission permission = await Geolocator.requestPermission();
+
+  if (permission == LocationPermission.always ||
+      permission == LocationPermission.whileInUse) {
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    // Construct Google Maps link
+    String mapsLink =
+        'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}';
+
+    // Send location as a message to the group
+    await _chatService.sendMessageToGroup(
+      widget.receiverGroupId,
+      _firebaseAuth.currentUser!.uid,
+      'Location: $mapsLink',
+    );
+
+    // Notify the user that the location message has been sent
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Location shared with the group.'),
+      ),
+    );
+
+    // Launch URL when the message is sent
+    launchUrl(mapsLink as Uri); // Open the Google Maps link
+  } else {
+    // Handle if location permission is not granted
+    print('Location permission not granted');
+  }
+}
+
 
   void sendMessageToGroup() async {
     // Only send messages if there is something to send
@@ -125,7 +167,17 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
           //send Image button
           IconButton(
             color: Colors.black,
-            onPressed: () {},
+            onPressed: () async {
+              String? imagePath = await _getImageFromDevice();
+              if (imagePath != null) {
+                String imageUrl = await uploadImageToFirebaseStorage(imagePath);
+                await _chatService.sendMessage(
+                  widget.receiverGroupName,
+                  '', // Optional message text for image
+                  imageUrl,
+                );
+              }
+            },
             icon: const Icon(
               Icons.image,
               size: 20,
@@ -154,7 +206,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
           //send location button
           IconButton(
             color: Colors.black,
-            onPressed: () {},
+            onPressed: sendUserLocationGroup,
             icon: const Icon(
               Icons.map_rounded,
               size: 40,
@@ -165,3 +217,30 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
     );
   }
 }
+
+Future<String?> _getImageFromDevice() async {
+  final picker = ImagePicker();
+  
+  try {
+    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (pickedFile != null) {
+      return pickedFile.path;
+    } else {
+      // User canceled image picking
+      return null;
+    }
+  } catch (e) {
+    print("Error picking image: $e");
+    return null;
+  }
+}
+
+Future<String> uploadImageToFirebaseStorage(String imagePath) async {
+    FirebaseStorage storage = FirebaseStorage.instance;
+    Reference ref = storage.ref().child('chat_images/${DateTime.now().millisecondsSinceEpoch}');
+    UploadTask uploadTask = ref.putFile(File(imagePath));
+    TaskSnapshot snapshot = await uploadTask.whenComplete(() => null);
+    String downloadUrl = await snapshot.ref.getDownloadURL();
+    return downloadUrl;
+  }

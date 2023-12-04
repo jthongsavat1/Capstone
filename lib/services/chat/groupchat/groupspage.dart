@@ -1,5 +1,5 @@
-import 'package:capstone/pages/groupchat/groupinfo.dart';
-import 'package:capstone/services/chat/creategroup.dart';
+import 'package:capstone/services/chat/groupchat/groupinfo.dart';
+import 'package:capstone/services/chat/groupchat/creategroup.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +26,13 @@ class _GroupsPageState extends State<GroupsPage> {
     } catch (error) {
       return [];
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh the group list when the page rebuilds
+    setState(() {});
   }
 
   @override

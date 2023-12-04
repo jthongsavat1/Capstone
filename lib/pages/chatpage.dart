@@ -1,4 +1,4 @@
-import 'package:capstone/pages/groupchat/groupchatroom.dart';
+import 'package:capstone/services/chat/groupchat/groupchatroom.dart';
 import 'package:capstone/pages/messagepage.dart';
 import 'package:capstone/services/chat/searchscreenchat.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

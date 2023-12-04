@@ -12,7 +12,8 @@ class Message {
     required this.senderEmail, 
     required this.receiverId, 
     required this.message,
-    required this.timestamp,
+    required this.timestamp, 
+    String? imageUrl,
   });
 
   //convert to a map
@@ -40,6 +41,7 @@ class GroupMessage {
     required this.groupId,
     required this.message,
     required this.timestamp,
+    String? imageUrl,
   });
 
   // Convert to a map
