@@ -44,122 +44,213 @@ class _LogInPageState extends State<LogInPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[300],
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/background.jpg'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-            child: Center(
-              child: Image.asset(
-                'assets/images/logoidea.png', // Replace with your image path
-                height: 200,
-                width: 700,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-            Expanded(
+      body: LayoutBuilder(
+        builder: (context,constraints) {
+          if (constraints.maxWidth < 450){
+            return SingleChildScrollView(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SquareTile(
+                      onTap: () {}, 
+                      imagePath: 'assets/images/logoidea.png',
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                    const SizedBox(height: 50),
+                    const Center(
+                      child: Text(
+                        "Welcome Back Buddy!",
+                        style: TextStyle(
+                          fontSize: 28,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    MyTextField(
+                      controller: emailController,
+                      hintText: 'Email',
+                      obscureText: false,
+                    ),
+                    const SizedBox(height: 10),
+                    MyTextField(
+                      controller: passwordController,
+                      hintText: 'Password',
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 50),
+                    MyButton(onTap: signIn, text: "Sign In"),
+                    const SizedBox(height: 20),
+                    const Center(
+                      child: Text(
+                        "Or sign in with",
+                        style: TextStyle(
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(height: 50),
-                        // Welcome Back
-                        const Center(
-                          child: Text(
-                            "Welcome Back Buddy!",
-                            style: TextStyle(
-                              fontSize: 28,
-                            ),
-                          ),
+                        SquareTile(
+                          onTap: () {
+                            // Handle Google sign-in
+                          },
+                          imagePath: 'assets/images/google.png',
                         ),
-                        const SizedBox(height: 30),
-                        // Email field
-                        MyTextField(
-                          controller: emailController,
-                          hintText: 'Email',
-                          obscureText: false,
-                        ),
-                        const SizedBox(height: 5),
-                        // Password field
-                        MyTextField(
-                          controller: passwordController,
-                          hintText: 'Password',
-                          obscureText: true,
-                        ),
-                        const SizedBox(height: 50),
-                        // Sign in button
-                        MyButton(onTap: signIn, text: "Sign In"),
-                        const SizedBox(height: 20),
-                        const Center(
-                          child: Text(
-                            "Or sign in with",
-                            style: TextStyle(
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        // Social Media Login Tiles
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SquareTile(
-                              onTap: () =>
-                                  AuthService().signInWithGoogle(),
-                              imagePath: 'assets/images/google.png',
-                            ),
-                            const SizedBox(width: 15),
-                            SquareTile(
-                              onTap: () {},
-                              imagePath: 'assets/images/apple.png',
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        // Register
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('Not a Member?'),
-                            const SizedBox(width: 4),
-                            GestureDetector(
-                              onTap: widget.onTap,
-                              child: const Text(
-                                'Register now',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.lightBlueAccent,
-                                ),
-                              ),
-                            )
-                          ],
+                        const SizedBox(width: 15),
+                        SquareTile(
+                          onTap: () {
+                            // Handle Apple sign-in
+                          },
+                          imagePath: 'assets/images/apple.png',
                         ),
                       ],
                     ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Not a Member?'),
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: widget.onTap,
+                          child: const Text(
+                            'Register now',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.lightBlueAccent,
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          } else {
+          return DecoratedBox(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/background.jpg'),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                child: Center(
+                  child: Image.asset(
+                    'assets/images/logoidea.png', // Replace with your image path
+                    height: 200,
+                    width: 700,
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 50),
+                            // Welcome Back
+                            const Center(
+                              child: Text(
+                                "Welcome Back Buddy!",
+                                style: TextStyle(
+                                  fontSize: 28,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 30),
+                            // Email field
+                            MyTextField(
+                              controller: emailController,
+                              hintText: 'Email',
+                              obscureText: false,
+                            ),
+                            const SizedBox(height: 5),
+                            // Password field
+                            MyTextField(
+                              controller: passwordController,
+                              hintText: 'Password',
+                              obscureText: true,
+                            ),
+                            const SizedBox(height: 50),
+                            // Sign in button
+                            MyButton(onTap: signIn, text: "Sign In"),
+                            const SizedBox(height: 20),
+                            const Center(
+                              child: Text(
+                                "Or sign in with",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            // Social Media Login Tiles
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SquareTile(
+                                  onTap: () =>
+                                      AuthService().signInWithGoogle(),
+                                  imagePath: 'assets/images/google.png',
+                                ),
+                                const SizedBox(width: 15),
+                                SquareTile(
+                                  onTap: () {},
+                                  imagePath: 'assets/images/apple.png',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            // Register
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text('Not a Member?'),
+                                const SizedBox(width: 4),
+                                GestureDetector(
+                                  onTap: widget.onTap,
+                                  child: const Text(
+                                    'Register now',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.lightBlueAccent,
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          );
+        }
+        }
+      ), 
     );
   }
-
 }
+
